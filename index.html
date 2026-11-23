@@ -1381,7 +1381,7 @@
           const letterSpacing = parseFloat(style.letterSpacing) || 0;
           const expandedWidth = context.measureText('Expanded').width + letterSpacing * 7;
           const bodyWidth = context.measureText('Body').width + letterSpacing * 3;
-          bodyWord.style.transform = `scaleX(${expandedWidth / bodyWidth})`;
+          bodyWord.style.transform = `scale(${expandedWidth / bodyWidth})`;
         };
         measureTitle();
         window.addEventListener('resize', measureTitle, { passive: true });
@@ -1584,8 +1584,7 @@
 
       const fifthRegion = document.querySelector('.s1 .r5');
       const fifthImage = fifthRegion && fifthRegion.querySelector('.five-image');
-      // Optional user supplied track: place a music file at 5/music.mp3 to enable audio.
-      const fifthAudio = new Audio('5/music.mp3');
+      const fifthAudio = new Audio('5/5-2.mp3');
       fifthAudio.loop = true;
       let fifthOn = false;
       const toggleFifth = async () => {
