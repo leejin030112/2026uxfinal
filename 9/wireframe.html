@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Blue X-Ray Wireframes</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
+    body { display: grid; place-items: center; }
+    #page {
+      position: relative;
+      width: min(100vw, 177.7778vh);
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: #000;
+    }
+    #wireframe-view {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+      touch-action: none;
+      outline: none;
+    }
+    #wireframe-view:active { cursor: grabbing; }
+  </style>
+</head>
+<body>
+  <main id="page" aria-label="Blue X-ray wireframe models">
+    <canvas id="wireframe-view" aria-label="Drag any model cell to rotate that model"></canvas>
+  </main>
+  <script src="wireframe-data.js"></script>
+  <script>
+    (() => {
+      const canvas = document.getElementById('wireframe-view');
+      const ctx = canvas.getContext('2d');
+      const data = window.NINE_WIREFRAME_DATA || {};
+      const files = Object.keys(data);
+      const columns = 4, rows = 3;
+      const cells = Array.from({ length: columns * rows }, (_, i) => i);
+      for (let i = cells.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cells[i], cells[j]] = [cells[j], cells[i]];
+      }
+      const models = [];
+      const cellMap = new Map();
+      let width = 0, height = 0, dpr = 1;
+      let activeModel = null, lastPointer = null, drawPending = false;
+
+      for (let i = 0; i < files.length; i++) {
+        const name = files[i], item = data[name];
+        const binary = atob(item.data);
+        const bytes = new Uint8Array(binary.length);
+        for (let j = 0; j < binary.length; j++) bytes[j] = binary.charCodeAt(j);
+        const model = {
+          name,
+          segments: new Int16Array(bytes.buffer),
+          count: item.segments,
+          quant: item.scale,
+          cell: cells[i],
+          size: .68 + Math.random() * .5,
+          offsetX: (Math.random() - .5) * .16,
+          offsetY: (Math.random() - .5) * .14,
+          rotationX: (Math.random() - .5) * .65,
+          rotationY: Math.random() * Math.PI * 2
+        };
+        models.push(model);
+        cellMap.set(model.cell, model);
+      }
+
+      const draw = () => {
+        if (!width || !height) return;
+        ctx.clearRect(0, 0, width, height);
+        const glow = new Path2D(), core = new Path2D();
+        const cellWidth = width / columns, cellHeight = height / rows;
+        for (const model of models) {
+          const col = model.cell % columns, row = Math.floor(model.cell / columns);
+          const centerX = (col + .5 + model.offsetX) * cellWidth;
+          const centerY = (row + .5 + model.offsetY) * cellHeight;
+          const pixelScale = Math.min(cellWidth, cellHeight) * .68 * model.size / 2.35;
+          const cosX = Math.cos(model.rotationX), sinX = Math.sin(model.rotationX);
+          const cosY = Math.cos(model.rotationY), sinY = Math.sin(model.rotationY);
+          for (let i = 0; i < model.count; i++) {
+            const k = i * 6;
+            const x = model.segments[k] / model.quant;
+            const y = model.segments[k + 1] / model.quant;
+            const z = model.segments[k + 2] / model.quant;
+            const x2 = model.segments[k + 3] / model.quant;
+            const y2 = model.segments[k + 4] / model.quant;
+            const z2 = model.segments[k + 5] / model.quant;
+            const ax = x * cosY + z * sinY;
+            const az = -x * sinY + z * cosY;
+            const ay = y * cosX - az * sinX;
+            const adepth = y * sinX + az * cosX;
+            const bx = x2 * cosY + z2 * sinY;
+            const bz = -x2 * sinY + z2 * cosY;
+            const by = y2 * cosX - bz * sinX;
+            const bdepth = y2 * sinX + bz * cosX;
+            const ap = 5.5 / (5.5 + adepth), bp = 5.5 / (5.5 + bdepth);
+            const x1 = centerX + ax * pixelScale * ap;
+            const y1 = centerY - ay * pixelScale * ap;
+            const x3 = centerX + bx * pixelScale * bp;
+            const y3 = centerY - by * pixelScale * bp;
+            glow.moveTo(x1, y1); glow.lineTo(x3, y3);
+            core.moveTo(x1, y1); core.lineTo(x3, y3);
+          }
+        }
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = 'rgba(0, 112, 255, .45)';
+        ctx.lineWidth = 2.4;
+        ctx.shadowColor = '#087dff';
+        ctx.shadowBlur = 7;
+        ctx.stroke(glow);
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = 'rgba(91, 231, 255, .9)';
+        ctx.lineWidth = 1;
+        ctx.stroke(core);
+        ctx.globalCompositeOperation = 'source-over';
+      };
+      const scheduleDraw = () => {
+        if (drawPending) return;
+        drawPending = true;
+        requestAnimationFrame(() => { drawPending = false; draw(); });
+      };
+      const resize = () => {
+        const rect = canvas.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        width = rect.width; height = rect.height;
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        draw();
+      };
+      const cellAt = (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.max(0, Math.min(.999999, (event.clientX - rect.left) / rect.width));
+        const y = Math.max(0, Math.min(.999999, (event.clientY - rect.top) / rect.height));
+        return Math.floor(y * rows) * columns + Math.floor(x * columns);
+      };
+      canvas.addEventListener('pointerdown', (event) => {
+        const model = cellMap.get(cellAt(event));
+        if (!model) return;
+        event.preventDefault();
+        activeModel = model;
+        lastPointer = { x: event.clientX, y: event.clientY };
+        canvas.setPointerCapture(event.pointerId);
+      });
+      canvas.addEventListener('pointermove', (event) => {
+        if (!activeModel || !lastPointer) return;
+        activeModel.rotationY += (event.clientX - lastPointer.x) * .012;
+        activeModel.rotationX += (event.clientY - lastPointer.y) * .012;
+        lastPointer = { x: event.clientX, y: event.clientY };
+        scheduleDraw();
+      });
+      const endDrag = () => { activeModel = null; lastPointer = null; };
+      canvas.addEventListener('pointerup', endDrag);
+      canvas.addEventListener('pointercancel', endDrag);
+      window.addEventListener('resize', resize, { passive: true });
+      resize();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1622 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title></title>
+  <style>
+    :root {
+      color-scheme: light;
+      --yellow: #e6d61e;
+      --pale: #e8e4e3;
+      --peach: #e99c7f;
+      --gray: #c7c7c7;
+      --brick: #be421d;
+      --orange: #e17543;
+      --sage: #aabfad;
+      --green: #4f9c56;
+      --purple: #722e74;
+      --blue: #34739d;
+      --black: #000;
+      --white: #fff;
+
+      /* 화면 한 장의 비율. 데스크탑은 16:9 (1440 x 810 기준 설계) */
+      --ratio: 16 / 9;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      margin: 0;
+      background: var(--black);
+      overflow-x: hidden;
+    }
+
+    main {
+      width: 100%;
+    }
+
+    /* 높이를 100svh로 고정하지 않고 "가로 100% + 고정 비율"로 만든다.
+       → 창을 줄여도 칸들의 비율이 그대로 유지되면서 같이 작아진다. */
+    .screen {
+      position: relative;
+      width: 100%;
+      aspect-ratio: var(--ratio);
+      overflow: hidden;
+      background: var(--white);
+    }
+
+    .region {
+      position: absolute;
+      display: block;
+      color: var(--label, var(--black));
+      background: var(--fill, transparent);
+    }
+
+    .region::after {
+      content: attr(data-number);
+      position: absolute;
+      z-index: 10;
+      right: clamp(6px, 0.8vw, 12px);
+      bottom: clamp(5px, 0.8vw, 10px);
+      font: 500 clamp(10px, 0.9vw, 13px)/1 Arial, sans-serif;
+      letter-spacing: 0;
+      color: inherit;
+      text-shadow: 0 0 2px color-mix(in srgb, var(--fill, transparent), transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Numbered visual areas */
+    .s1 .r1 {
+      overflow: hidden;
+    }
+
+    .title-cycle {
+      position: absolute;
+      inset: 0;
+    }
+
+    .title-cycle img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+    }
+
+    .title-cycle img.is-visible {
+      opacity: 1;
+    }
+
+    .s1 .r2 {
+      overflow: hidden;
+    }
+
+    .strip-track {
+      position: absolute;
+      inset: 0 0 auto;
+      width: 100%;
+      will-change: transform;
+    }
+
+    .strip-track img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .roller-shadow {
+      position: absolute;
+      z-index: 3;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(to bottom, rgba(0, 0, 0, .48), transparent 28%), linear-gradient(to top, rgba(0, 0, 0, .48), transparent 28%);
+    }
+
+    .s1 .r3 {
+      overflow: hidden;
+    }
+
+    .number-three-cycle {
+      position: absolute;
+      inset: 0;
+    }
+
+    .number-three-cycle img {
+      position: absolute;
+      inset: 15%;
+      width: 70%;
+      height: 70%;
+      object-fit: contain;
+      opacity: 0;
+      transition: opacity 120ms linear;
+    }
+
+    .number-three-cycle img.is-visible {
+      opacity: 1;
+    }
+
+    .s1 .r4 {
+      overflow: hidden;
+    }
+
+    .eye-stack {
+      position: absolute;
+      inset: 0;
+    }
+
+    .eye-stack img {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      height: 100%;
+      width: auto;
+      max-width: none;
+      transform: translate(-50%, -50%);
+    }
+
+    .eye-stack img[src$="4-3.png"] {
+      z-index: 1;
+    }
+
+    .eye-stack img[src$="4-2.png"] {
+      z-index: 2;
+    }
+
+    .eye-stack img[src$="4-1.png"] {
+      z-index: 3;
+    }
+
+    .eye-stack .eye-pupil {
+      --pupil-x: -3px;
+      transform: translate(calc(-50% + var(--pupil-x)), calc(-50% + var(--pupil-y, 0px)));
+    }
+
+    .s1 .r5 {
+      overflow: hidden;
+    }
+
+    .five-image {
+      position: absolute;
+      inset: 4%;
+      width: 100%;
+      height: 92%;
+      object-fit: contain;
+      transition: opacity 180ms ease;
+    }
+
+    .five-image-on {
+      opacity: 0;
+    }
+
+    .s1 .r5[aria-pressed="true"] .five-image-off {
+      opacity: 0;
+    }
+
+    .s1 .r5[aria-pressed="true"] .five-image-on {
+      opacity: 1;
+    }
+
+    .area-image {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .s1 .r6 {
+      overflow: hidden;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .six-image {
+      position: absolute;
+      top: 5%;
+      left: 5%;
+      width: 90%;
+      height: 90%;
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    .s1 .r6::before,
+    .s1 .r3::before {
+      content: "";
+      position: absolute;
+      z-index: 4;
+      inset: 0;
+      pointer-events: none;
+      opacity: .58;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.9'/%3E%3C/svg%3E");
+      background-size: 72px 72px;
+    }
+
+    .six-base { z-index: 1; }
+
+    .six-answer {
+      z-index: 2;
+      clip-path: inset(0 calc(100% - var(--six-reveal, 0%)) 0 0);
+    }
+
+    .six-ruler {
+      position: absolute;
+      z-index: 3;
+      top: 0;
+      left: 0;
+      height: 100%;
+      aspect-ratio: 144 / 856;
+      display: block;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      will-change: left;
+    }
+
+    .six-ruler:active { cursor: grabbing; }
+
+    .six-ruler img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+      pointer-events: none;
+      -webkit-user-drag: none;
+    }
+
+    .s1 .r7 {
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .seven-corner-markers {
+      position: absolute;
+      z-index: 5;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .seven-corner-markers span {
+      position: absolute;
+      width: 7%;
+      aspect-ratio: 1;
+      background: var(--yellow);
+    }
+
+    .seven-corner-markers span:nth-child(1) { top: 5%; left: 8%; }
+    .seven-corner-markers span:nth-child(2) { top: 5%; right: 8%; }
+    .seven-corner-markers span:nth-child(3) { bottom: 6%; left: 8%; }
+    .seven-corner-markers span:nth-child(4) { bottom: 6%; right: 8%; }
+
+    .s1 .r7:focus-visible,
+    .six-ruler:focus-visible {
+      outline: 2px solid var(--yellow);
+      outline-offset: -3px;
+    }
+
+    .s1 .r8 .area-image {
+      object-position: center 65%;
+    }
+
+    .s1 .r8 .area-quote {
+      position: absolute;
+      z-index: 2;
+      top: 7%;
+      left: 7.5%;
+      width: 88%;
+      color: var(--yellow);
+      font-family: Consolas, 'Courier New', monospace;
+      font-size: clamp(12px, 1.25vw, 24px);
+      line-height: 1.15;
+      font-weight: 400;
+      text-align: left;
+      pointer-events: none;
+    }
+
+    @media (max-width: 720px) {
+      .s1 .r8 .area-quote {
+        font-size: clamp(6px, 2.3vw, 12px);
+      }
+    }
+
+    /* ───────── DESKTOP (721px 이상): 기존 % 좌표 그대로 ───────── */
+
+    /* Screen 1: regions 1–10 */
+    .s1 .r1 {
+      left: 0;
+      top: 0;
+      width: 34.72%;
+      height: 15.4%;
+      --fill: var(--yellow);
+    }
+
+    .s1 .r2 {
+      left: 0;
+      top: 15.4%;
+      width: 8.68%;
+      height: 15.4%;
+      --fill: var(--pale);
+    }
+
+    .s1 .r3 {
+      left: 8.68%;
+      top: 15.4%;
+      width: 8.68%;
+      height: 15.4%;
+      --fill: var(--peach);
+    }
+
+    .s1 .r4 {
+      left: 17.36%;
+      top: 15.4%;
+      width: 8.68%;
+      height: 15.4%;
+      --fill: var(--gray);
+    }
+
+    .s1 .r5 {
+      left: 26.04%;
+      top: 15.4%;
+      width: 8.68%;
+      height: 15.4%;
+      --fill: var(--brick);
+    }
+
+    .s1 .r6 {
+      left: 34.72%;
+      top: 0;
+      width: 20.84%;
+      height: 30.8%;
+      --fill: var(--orange);
+    }
+
+    .s1 .r7 {
+      left: 55.56%;
+      top: 0;
+      width: 13.89%;
+      height: 30.8%;
+      overflow: hidden;
+      --fill: var(--sage);
+    }
+
+    .seven-pixels { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .seven-pixels { display: block; }
+
+    .s1 .r8 {
+      left: 69.45%;
+      top: 0;
+      width: 30.55%;
+      height: 30.8%;
+      --fill: var(--white);
+    }
+
+    .s1 .r9 {
+      left: 0;
+      top: 30.8%;
+      width: 69.45%;
+      height: 69.2%;
+      overflow: hidden;
+      --fill: var(--black);
+      --label: var(--white);
+    }
+
+
+
+    .s1 .r10 {
+      right: 0;
+      top: 30.8%;
+      width: 30.55%;
+      height: 69.2%;
+      overflow: hidden;
+      --fill: var(--green);
+    }
+
+    .ten-heading {
+      position: absolute;
+      z-index: 2;
+      top: 3%;
+      left: 3.5%;
+      width: 45%;
+      height: auto;
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    .ten-description {
+      position: absolute;
+      z-index: 2;
+      top: 3%;
+      left: 50%;
+      width: 46%;
+      height: 22%;
+      color: var(--white);
+      font-family: Consolas, 'Courier New', monospace;
+      font-size: clamp(6px, .68vw, 13px);
+      line-height: 1.15;
+      font-weight: 400;
+      text-align: left;
+      pointer-events: none;
+    }
+
+    .ten-composition {
+      position: absolute;
+      z-index: 1;
+      top: 25%;
+      left: 0;
+      width: 100%;
+      height: 75%;
+      object-fit: contain;
+      object-position: center bottom;
+      pointer-events: none;
+    }
+
+    .image-quote {
+      position: absolute;
+      z-index: 2;
+      top: 6%;
+      left: 7.5%;
+      width: 85%;
+      font-family: Consolas, 'Courier New', monospace;
+      line-height: 1.15;
+      font-weight: 400;
+      text-align: left;
+      pointer-events: none;
+    }
+
+    .s2 .r15-cutout .image-quote {
+      color: var(--yellow);
+      font-size: clamp(7px, .8vw, 13px);
+    }
+
+    .s3 .r24 .image-quote {
+      color: var(--yellow);
+      font-size: clamp(8px, .95vw, 15px);
+    }
+
+    @media (max-width: 720px) {
+      .ten-description { font-size: clamp(6px, 1.1vw, 8px); }
+      .ten-composition { top: 29%; height: 71%; }
+      .image-quote { font-size: clamp(6px, 1.4vw, 10px) !important; }
+    }
+
+    .nine-two-cloud {
+      position: absolute;
+      z-index: 1;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+      touch-action: none;
+      outline: none;
+    }
+
+    .nine-two-cloud:active { cursor: grabbing; }
+
+    .nine-frame {
+      position: absolute;
+      z-index: 2;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+      user-select: none;
+    }
+    /* Screen 2: regions 11–16 */
+    .s2 .r11 {
+      left: 0;
+      top: 0;
+      width: 34.72%;
+      height: 5.6%;
+      --fill: var(--pale);
+    }
+
+    .s2 .r12 {
+      left: 34.72%;
+      top: 0;
+      width: 65.28%;
+      height: 5.6%;
+      --fill: var(--yellow);
+    }
+
+    .s2 .r13 {
+      left: 0;
+      top: 5.6%;
+      width: 17.36%;
+      height: 23.5%;
+      --fill: var(--purple);
+      --label: var(--white);
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .expanded-boxes {
+      position: absolute;
+      z-index: 1;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .expanded-boxes span {
+      position: absolute;
+      display: block;
+      opacity: 0;
+      transition: none;
+    }
+
+    .expanded-boxes { --expanded-step: clamp(6px, .8vw, 12px); }
+    .expanded-boxes span:nth-child(1) { inset: var(--expanded-step); background: var(--yellow); }
+    .expanded-boxes span:nth-child(2) { inset: calc(var(--expanded-step) * 2); background: var(--purple); }
+    .expanded-boxes span:nth-child(3) { inset: calc(var(--expanded-step) * 3); background: var(--yellow); }
+    .expanded-boxes span:nth-child(4) { inset: calc(var(--expanded-step) * 4); background: var(--purple); }
+    .expanded-boxes span:nth-child(5) { inset: calc(var(--expanded-step) * 5); background: var(--yellow); }
+
+    .expanded-noise {
+      position: absolute;
+      z-index: 4;
+      inset: 0;
+      opacity: .36;
+      mix-blend-mode: soft-light;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.9'/%3E%3C/svg%3E");
+      background-size: 72px 72px;
+    }
+
+    .expanded-title {
+      position: absolute;
+      z-index: 5;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--yellow);
+      font: 500 clamp(22px, 3vw, 58px)/.9 Arial, Helvetica, sans-serif;
+      letter-spacing: -.055em;
+      text-align: center;
+      -webkit-text-stroke: .055em var(--purple);
+      paint-order: stroke fill;
+      pointer-events: none;
+    }
+
+    .section-title-20 {
+      position: absolute;
+      z-index: 2;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    .section-title-27 {
+      position: absolute;
+      z-index: 2;
+      top: 0;
+      left: 0;
+      width: 34.72%;
+      height: 12.9%;
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    .s2 .r14 {
+      left: 0;
+      top: 29.1%;
+      width: 17.36%;
+      height: 70.9%;
+      --fill: var(--blue);
+      --label: var(--white);
+    }
+
+    .s2 .r15 {
+      left: 17.36%;
+      top: 5.6%;
+      width: 17.36%;
+      height: 58%;
+      --fill: var(--brick);
+      --label: var(--white);
+    }
+
+    .s2 .r15-cutout {
+      left: 17.36%;
+      top: 63.6%;
+      width: 17.36%;
+      height: 36.4%;
+      --fill: var(--black);
+      --label: var(--white);
+    }
+
+    .s2 .r16 {
+      left: 34.72%;
+      top: 5.6%;
+      width: 65.28%;
+      height: 94.4%;
+      --fill: var(--white);
+    }
+
+    .s2 .r11,
+    .s2 .r12 { overflow: hidden; }
+
+    .marquee-track {
+      position: absolute;
+      z-index: 1;
+      inset: 0 auto 0 0;
+      display: flex;
+      width: max-content;
+      height: 100%;
+      align-items: center;
+      white-space: nowrap;
+      will-change: transform;
+    }
+
+    .s2 .r11 .marquee-track {
+      animation: building-flow-left 28s linear infinite;
+    }
+
+    .s2 .r12 .marquee-track {
+      animation: building-flow-right 38s linear infinite;
+    }
+
+    .marquee-group {
+      display: flex;
+      flex: 0 0 auto;
+      height: 100%;
+      align-items: center;
+      white-space: nowrap;
+    }
+
+    .s2 .r11 .marquee-group { transform: scaleY(-1); }
+
+    .marquee-phrase {
+      display: inline-flex;
+      flex: 0 0 auto;
+      align-items: center;
+      margin-right: 0.55em;
+      white-space: nowrap;
+    }
+
+    .s2 .r11 .marquee-glyph {
+      display: inline-block;
+      color: var(--black);
+      white-space: pre;
+      line-height: 1;
+    }
+
+    .s2 .r11 .marquee-glyph.is-blocked {
+      color: transparent;
+      background: #000;
+    }
+
+    .s2 .r11 .marquee-track { font: 500 clamp(11px, 1.5vw, 22px)/1 Consolas, 'Courier New', monospace; }
+    .s2 .r12 .marquee-track { font: 500 clamp(11px, 1.5vw, 22px)/1 Consolas, 'Courier New', monospace; }
+    .marquee-me,
+    .me-replacement {
+      display: inline-flex;
+      flex: 0 0 clamp(18.9px, 2.7vw, 40.5px);
+      width: clamp(18.9px, 2.7vw, 40.5px);
+      height: clamp(16.1px, 2.3vw, 34.5px);
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+    }
+
+    .marquee-me {
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .me-replacement img {
+      display: block;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    @keyframes building-flow-left {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    @keyframes building-flow-right {
+      from { transform: translateX(-50%); }
+      to { transform: translateX(0); }
+    }
+
+    @media (max-width: 720px) {
+      .s2 .r11 .marquee-track,
+      .s2 .r12 .marquee-track { font-size: clamp(9px, 2.55vw, 16px); }
+      .marquee-me,
+      .me-replacement {
+        flex-basis: clamp(14.85px, 4.59vw, 28.35px);
+        width: clamp(14.85px, 4.59vw, 28.35px);
+        height: clamp(12.65px, 3.91vw, 24.15px);
+      }
+    }
+    /* Screen 3: regions 17–25 */
+    .s3 .r17 {
+      left: 0;
+      top: 0;
+      width: 34.72%;
+      height: 5.6%;
+      --fill: var(--purple);
+      --label: var(--white);
+    }
+
+    .s3 .r18 {
+      left: 34.72%;
+      top: 0;
+      width: 65.28%;
+      height: 5.6%;
+      --fill: var(--pale);
+    }
+
+    .s3 .r19 {
+      left: 0;
+      top: 5.6%;
+      width: 34.72%;
+      height: 12.9%;
+      --fill: var(--green);
+      --label: var(--white);
+    }
+
+    .s3 .r20 {
+      left: 0;
+      top: 18.5%;
+      width: 34.72%;
+      height: 81.5%;
+      --fill: var(--yellow);
+    }
+
+    .s3 .r21 {
+      left: 34.72%;
+      top: 5.6%;
+      width: 13.89%;
+      height: 94.4%;
+      --fill: var(--sage);
+    }
+
+    .s3 .r22 {
+      left: 48.61%;
+      top: 5.6%;
+      width: 30.56%;
+      height: 94.4%;
+      --fill: var(--white);
+    }
+
+    .s3 .r23 {
+      right: 0;
+      top: 5.6%;
+      width: 20.83%;
+      height: 72.4%;
+      --fill: var(--orange);
+    }
+
+    .s3 .r24 {
+      right: 0;
+      bottom: 5.5%;
+      width: 20.83%;
+      height: 22%;
+      --fill: var(--brick);
+      --label: var(--white);
+    }
+
+    .s3 .r25 {
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 5.5%;
+      --fill: var(--blue);
+      --label: var(--white);
+    }
+
+    /* Screens 4–5: regions 26–28 */
+    .s4 {
+      background: var(--black);
+    }
+
+    .s4 .r26 {
+      inset: 0;
+      overflow: hidden;
+      --fill: var(--black);
+      --label: var(--white);
+    }
+
+    .voxel-face-frame {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: var(--black);
+      border: 0;
+    }
+
+    .s5 {
+      background: var(--purple);
+    }
+
+    .s5 .r27 {
+      inset: 0 0 2.2%;
+      --fill: var(--purple);
+      --label: var(--white);
+    }
+
+    .s5 .r28 {
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 2.2%;
+      --fill: var(--yellow);
+    }
+
+    /* ───────── MOBILE (720px 이하): 칸 재배치 ─────────
+       화면 한 장 = 4열 x 8행, 비율 1:2 → 1칸이 정사각형.
+       각 칸은 --x --y --w --h (칸 단위, 소수 가능)만 적으면 된다.
+       데스크탑의 칸 비율(정사각 칸, 얇은 바, 큰 검정 면 등)을 최대한 유지. */
+    @media (max-width: 720px) {
+      :root {
+        --ratio: 1 / 2;
+      }
+
+      .screen .region {
+        inset: auto;
+        left: calc(var(--x) * 25%);
+        top: calc(var(--y) * 12.5%);
+        width: calc(var(--w) * 25%);
+        height: calc(var(--h) * 12.5%);
+      }
+
+      /* Screen 1 */
+      .s1 .r1 {
+        --x: 0;
+        --y: 0;
+        --w: 4;
+        --h: 1;
+      }
+
+      .s1 .r2 {
+        --x: 0;
+        --y: 1;
+        --w: 1;
+        --h: 1;
+      }
+
+      .s1 .r3 {
+        --x: 1;
+        --y: 1;
+        --w: 1;
+        --h: 1;
+      }
+
+      .s1 .r4 {
+        --x: 2;
+        --y: 1;
+        --w: 1;
+        --h: 1;
+      }
+
+      .s1 .r5 {
+        --x: 3;
+        --y: 1;
+        --w: 1;
+        --h: 1;
+      }
+
+      .s1 .r6 {
+        --x: 0;
+        --y: 2;
+        --w: 2;
+        --h: 2;
+      }
+
+      .s1 .r7 {
+        --x: 2;
+        --y: 2;
+        --w: 1;
+        --h: 2;
+      }
+
+      .s1 .r8 {
+        --x: 3;
+        --y: 2;
+        --w: 1;
+        --h: 2;
+      }
+
+      .s1 .r9 {
+        --x: 0;
+        --y: 4;
+        --w: 4;
+        --h: 2;
+      }
+
+      .s1 .r10 {
+        --x: 0;
+        --y: 6;
+        --w: 4;
+        --h: 2;
+      }
+
+      /* Screen 2 */
+      .s2 .r11 {
+        --x: 0;
+        --y: 0;
+        --w: 1.39;
+        --h: 0.35;
+      }
+
+      .s2 .r12 {
+        --x: 1.39;
+        --y: 0;
+        --w: 2.61;
+        --h: 0.35;
+      }
+
+      .s2 .r13 {
+        --x: 0;
+        --y: 0.35;
+        --w: 2;
+        --h: 1;
+      }
+
+      .s2 .r14 {
+        --x: 0;
+        --y: 1.35;
+        --w: 2;
+        --h: 3;
+      }
+
+      .s2 .r15 {
+        --x: 2;
+        --y: 0.35;
+        --w: 2;
+        --h: 2.4;
+      }
+
+      .s2 .r15-cutout {
+        --x: 2;
+        --y: 2.75;
+        --w: 2;
+        --h: 1.6;
+      }
+
+      .s2 .r16 {
+        --x: 0;
+        --y: 4.35;
+        --w: 4;
+        --h: 3.65;
+      }
+
+      /* Screen 3 */
+      .s3 .r17 {
+        --x: 0;
+        --y: 0;
+        --w: 1.39;
+        --h: 0.35;
+      }
+
+      .s3 .r18 {
+        --x: 1.39;
+        --y: 0;
+        --w: 2.61;
+        --h: 0.35;
+      }
+
+      .s3 .r19 {
+        --x: 0;
+        --y: 0.35;
+        --w: 4;
+        --h: 1;
+      }
+
+      .s3 .r20 {
+        --x: 0;
+        --y: 1.35;
+        --w: 2;
+        --h: 3;
+      }
+
+      .s3 .r21 {
+        --x: 2;
+        --y: 1.35;
+        --w: 2;
+        --h: 1.5;
+      }
+
+      .s3 .r22 {
+        --x: 2;
+        --y: 2.85;
+        --w: 2;
+        --h: 1.5;
+      }
+
+      .s3 .r23 {
+        --x: 0;
+        --y: 4.35;
+        --w: 2;
+        --h: 3.3;
+      }
+
+      .s3 .r24 {
+        --x: 2;
+        --y: 5.85;
+        --w: 2;
+        --h: 1.8;
+      }
+
+      .s3 .r25 {
+        --x: 0;
+        --y: 7.65;
+        --w: 4;
+        --h: 0.35;
+      }
+
+      /* Screens 4–5 */
+      .s4 .r26 {
+        --x: 0;
+        --y: 0;
+        --w: 4;
+        --h: 8;
+      }
+
+      .s5 .r27 {
+        --x: 0;
+        --y: 0;
+        --w: 4;
+        --h: 7.85;
+      }
+
+      .s5 .r28 {
+        --x: 0;
+        --y: 7.85;
+        --w: 4;
+        --h: 0.15;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main aria-label="색면 레이아웃">
+    <section class="screen s1" aria-label="첫 번째 화면">
+      <div class="region r1" data-number="1">
+        <div class="title-cycle" aria-hidden="true"><img src="1/1-1.png" class="is-visible"><img src="1/1-2.png"><img
+            src="1/1-3.png"></div>
+      </div>
+      <div class="region r2" data-number="2">
+        <div class="strip-track" aria-hidden="true"><img src="2/2.png"><img src="2/2.png"></div>
+        <div class="roller-shadow" aria-hidden="true"></div>
+      </div>
+      <div class="region r3" data-number="3">
+        <div class="number-three-cycle" aria-hidden="true"><img src="3/3.png" class="is-visible"><img
+            src="3/3-1.png"><img src="3/3-2.png"><img src="3/3-3.png"><img src="3/3-4.png"><img src="3/3-5.png"></div>
+      </div>
+      <div class="region r4" data-number="4">
+        <div class="eye-stack" id="eye-stack" aria-hidden="true"><img src="4/4-1.png"><img src="4/4-2.png"
+            class="eye-pupil"><img src="4/4-3.png"></div>
+      </div>
+      <div class="region r5" data-number="5" role="button" tabindex="0" aria-pressed="false"><img
+          class="five-image five-image-off" src="5/5-1.png" alt=""><img class="five-image five-image-on" src="5/5.png"
+          alt=""></div>
+      <div class="region r6" data-number="6" aria-label="6번 이미지 인터랙션">
+        <img class="six-image six-base" src="6/6.png" alt="">
+        <img class="six-image six-answer" src="6/6-1.png" alt="">
+        <div class="six-ruler" role="slider" tabindex="0" aria-label="자를 좌우로 움직여 이미지 공개" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><img src="6/6-2.png" alt=""></div>
+      </div>
+      <div class="region r7" data-number="7" role="button" tabindex="0" aria-label="이미지 변환 단계 0 / 8" aria-valuetext="인간 이미지" aria-pressed="false"><canvas class="seven-pixels" aria-hidden="true"></canvas><div class="seven-corner-markers" aria-hidden="true"><span></span><span></span><span></span><span></span></div></div>
+      <div class="region r8" data-number="8"><img class="area-image" src="8/8.jpg" alt=""><div class="area-quote">Architecture in its true sense is not an object separate from its inhabitants, but another self that mirrors our inner being.</div></div>
+      <div class="region r9" data-number="9" aria-label="척추와 beam 포인트 클라우드">
+        <canvas class="nine-two-cloud" aria-label="왼쪽 척추 또는 오른쪽 beam을 드래그해 회전"></canvas>
+        <img class="nine-frame" src="9/frame.png" alt="" aria-hidden="true">
+      </div>
+
+      <div class="region r10" data-number="10">
+        <img class="ten-heading" src="10/10.png" alt="Architecture as a Second Body"><div class="ten-description">Architecture is both a vessel for humanity and an extension of the human form. Much like the human body possesses a skeleton, skin, and organs, a building is composed of structure, facade, spaces, and systems.</div>
+        <img class="ten-composition" src="10/10-1.png" alt="Body parts and architectural elements">
+      </div>
+    </section>
+    <section class="screen s2" aria-label="두 번째 화면">
+      <div class="region r11" data-number="11" aria-label="Building me text flows left; hover over letters to turn them into black blocks"><div class="marquee-track" id="building-flow-11"></div></div>
+      <div class="region r12" data-number="12" aria-label="Building me text flows right; click me to reveal a moving image"><div class="marquee-track" id="building-flow-12"></div></div>
+      <div class="region r13" data-number="13" aria-label="Expanded Body: move the pointer toward the center to reveal nested yellow and purple squares">
+        <div class="expanded-boxes" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="expanded-noise" aria-hidden="true"></div>
+        <div class="expanded-title" aria-hidden="true"><span class="expanded-word">Expanded</span><span class="expanded-word expanded-word-body">Body</span></div>
+      </div>
+      <div class="region r14" data-number="14"></div>
+      <div class="region r15" data-number="15"></div>
+      <div class="region r15-cutout" data-number="16"><img class="area-image" src="16/16.jpg" alt=""><div class="image-quote">Architecture is a space that houses human beings, as well as another body that extends the human form.</div></div>
+      <div class="region r16" data-number="17"></div>
+    </section>
+    <section class="screen s3" aria-label="세 번째 화면">
+      <div class="region r17" data-number="18"></div>
+      <div class="region r18" data-number="19"></div>
+      <div class="region r19" data-number="20"><img class="section-title-20" src="20/20.png" alt="2 The identity of architecture is not fixed."></div>
+      <div class="region r20" data-number="21"></div>
+      <div class="region r21" data-number="22"></div>
+      <div class="region r22" data-number="23"></div>
+      <div class="region r23" data-number="24"></div>
+      <div class="region r24" data-number="25"><img class="area-image" src="25/25.jpg" alt=""><div class="image-quote">A space that was just a warehouse until yesterday can become a bedroom today.</div></div>
+      <div class="region r25" data-number="26"></div>
+    </section>
+    <section class="screen s4" aria-label="네 번째 화면">
+      <div class="region r26" data-number="27"><iframe class="voxel-face-frame" src="test/voxel_face.html" title="Voxel face interaction"></iframe><img class="section-title-27" src="27/27.png" alt="3 Merging self and space births a new identity"></div>
+    </section>
+    <section class="screen s5" aria-label="다섯 번째 화면">
+      <div class="region r27" data-number="28"></div>
+      <div class="region r28" data-number="29"></div>
+    </section>
+  </main>
+  <script src="9/two-point-clouds-data.js"></script>
+  <script>
+    (() => {
+      const slides = Array.from(document.querySelectorAll('.title-cycle img'));
+      if (slides.length) {
+        let current = 0;
+        window.setInterval(() => {
+          slides[current].classList.remove('is-visible');
+          current = (current + 1) % slides.length;
+          slides[current].classList.add('is-visible');
+        }, 1000);
+      }
+
+      const roller = document.querySelector('.s1 .r2');
+      const rollerTrack = roller && roller.querySelector('.strip-track');
+      if (roller && rollerTrack) {
+        const rollerImage = rollerTrack.querySelector('img');
+        let scrollOffset = 0;
+        let direction = 0;
+        let imageHeight = 0;
+        let lastFrame = 0;
+        const centerImageInArea = () => {
+          const areaHeight = roller.clientHeight;
+          imageHeight = rollerImage.getBoundingClientRect().height;
+          scrollOffset = Math.max(0, (imageHeight - areaHeight) / 2);
+          rollerTrack.style.transform = `translateY(${-scrollOffset}px)`;
+        };
+        const moveRoller = (time) => {
+          if (direction && imageHeight > roller.clientHeight) {
+            const elapsed = lastFrame ? Math.min(48, time - lastFrame) : 0;
+            scrollOffset = (scrollOffset + direction * elapsed * 0.12 + imageHeight) % imageHeight;
+            rollerTrack.style.transform = `translateY(${-scrollOffset}px)`;
+          }
+          lastFrame = time;
+          window.requestAnimationFrame(moveRoller);
+        };
+        if (rollerImage.complete) centerImageInArea();
+        else rollerImage.addEventListener('load', centerImageInArea, { once: true });
+        window.addEventListener('resize', centerImageInArea, { passive: true });
+        window.requestAnimationFrame(moveRoller);
+        roller.addEventListener('pointermove', (event) => {
+          const rect = roller.getBoundingClientRect();
+          const centerY = rect.top + rect.height / 2;
+          direction = event.clientY < centerY ? 1 : event.clientY > centerY ? -1 : 0;
+        }, { passive: true });
+        roller.addEventListener('pointerleave', () => { direction = 0; });
+      }
+
+      const sixRegion = document.querySelector('.s1 .r6');
+      const sixRuler = sixRegion && sixRegion.querySelector('.six-ruler');
+      const sixAnswer = sixRegion && sixRegion.querySelector('.six-answer');
+      if (sixRegion && sixRuler && sixAnswer) {
+        let sixProgress = 0;
+        let sixDragging = false;
+        let sixDragOffset = 0;
+        let sixRegionRect = sixRegion.getBoundingClientRect();
+        let sixTravel = 1;
+        const measureSixTrack = () => {
+          sixRegionRect = sixRegion.getBoundingClientRect();
+          sixTravel = Math.max(1, sixRegionRect.width - sixRuler.getBoundingClientRect().width);
+        };
+        const setSixProgress = (progress) => {
+          sixProgress = Math.max(0, Math.min(1, progress));
+          sixRuler.style.left = `${sixTravel * sixProgress}px`;
+          sixAnswer.style.setProperty('--six-reveal', `${sixProgress * 100}%`);
+          sixRuler.setAttribute('aria-valuenow', String(Math.round(sixProgress * 100)));
+        };
+        const updateSixFromPointer = (event) => {
+          setSixProgress((event.clientX - sixRegionRect.left - sixDragOffset) / sixTravel);
+        };
+        sixRuler.addEventListener('pointerdown', (event) => {
+          event.preventDefault();
+          sixDragging = true;
+          sixDragOffset = event.clientX - sixRuler.getBoundingClientRect().left;
+          sixRuler.setPointerCapture(event.pointerId);
+        });
+        sixRegion.addEventListener('pointerdown', (event) => {
+          if (event.target === sixRuler || sixRuler.contains(event.target)) return;
+          event.preventDefault();
+          sixDragging = true;
+          sixDragOffset = sixRuler.getBoundingClientRect().width / 2;
+          sixRuler.setPointerCapture(event.pointerId);
+          updateSixFromPointer(event);
+        });
+        sixRuler.addEventListener('pointermove', (event) => {
+          if (sixDragging) updateSixFromPointer(event);
+        });
+        const stopSixDrag = () => { sixDragging = false; };
+        sixRuler.addEventListener('pointerup', stopSixDrag);
+        sixRuler.addEventListener('pointercancel', stopSixDrag);
+        sixRuler.addEventListener('keydown', (event) => {
+          const increments = { ArrowRight: .04, ArrowUp: .04, ArrowLeft: -.04, ArrowDown: -.04, PageUp: .12, PageDown: -.12 };
+          if (event.key === 'Home') { event.preventDefault(); setSixProgress(0); }
+          else if (event.key === 'End') { event.preventDefault(); setSixProgress(1); }
+          else if (increments[event.key]) { event.preventDefault(); setSixProgress(sixProgress + increments[event.key]); }
+        });
+        const sixRulerImage = sixRuler.querySelector('img');
+        const resetSixTrack = () => { measureSixTrack(); setSixProgress(sixProgress); };
+        resetSixTrack();
+        if (!sixRulerImage.complete) sixRulerImage.addEventListener('load', resetSixTrack, { once: true });
+        window.addEventListener('resize', resetSixTrack, { passive: true });
+      }
+      const sevenRegion = document.querySelector('.s1 .r7');
+      const sevenCanvas = sevenRegion && sevenRegion.querySelector('.seven-pixels');
+      if (sevenCanvas) {
+        const sevenImage = new Image();
+        sevenImage.src = '7/7.png';
+        const sevenNextImage = new Image();
+        sevenNextImage.src = '7/7-1.png';
+        const pixelCanvas = document.createElement('canvas');
+        const pixelContext = pixelCanvas.getContext('2d');
+        const nextPixelCanvas = document.createElement('canvas');
+        const nextPixelContext = nextPixelCanvas.getContext('2d');
+        const displayContext = sevenCanvas.getContext('2d');
+        const sevenSteps = 8;
+        const sevenLabels = ['인간 이미지', '픽셀화가 시작된 인간', '픽셀화된 인간', '인간에서 건물로 변환 중', '픽셀화된 건물로 변환 중', '픽셀화된 건물', '건물 픽셀 해제 중', '건물 이미지로 변환 중', '건물 이미지'];
+        let sevenStep = 0;
+        let sevenProgress = 0;
+        let sevenAnimating = false;
+        let previousFrame = 0;
+        const drawSeven = () => {
+          const bounds = sevenRegion.getBoundingClientRect();
+          const ratio = window.devicePixelRatio || 1;
+          const width = Math.max(1, Math.round(bounds.width * ratio));
+          const height = Math.max(1, Math.round(bounds.height * ratio));
+          if (sevenCanvas.width !== width || sevenCanvas.height !== height) {
+            sevenCanvas.width = width;
+            sevenCanvas.height = height;
+          }
+          const phase = sevenProgress <= .5 ? sevenProgress * 2 : (1 - sevenProgress) * 2;
+          const blockSize = 1 + phase * 24 * ratio;
+          const gridWidth = Math.max(1, Math.ceil(width / blockSize));
+          const gridHeight = Math.max(1, Math.ceil(height / blockSize));
+          pixelCanvas.width = gridWidth;
+          pixelCanvas.height = gridHeight;
+          nextPixelCanvas.width = gridWidth;
+          nextPixelCanvas.height = gridHeight;
+          const drawPixelVersion = (image, context) => {
+            if (!image.complete || !image.naturalWidth) return false;
+            const sourceRatio = image.naturalWidth / image.naturalHeight;
+            const targetRatio = width / height;
+            let sx = 0, sy = 0, sw = image.naturalWidth, sh = image.naturalHeight;
+            if (sourceRatio > targetRatio) {
+              sw = sh * targetRatio;
+              sx = (image.naturalWidth - sw) / 2;
+            } else {
+              sh = sw / targetRatio;
+              sy = (image.naturalHeight - sh) / 2;
+            }
+            context.imageSmoothingEnabled = true;
+            context.clearRect(0, 0, gridWidth, gridHeight);
+            context.drawImage(image, sx, sy, sw, sh, 0, 0, gridWidth, gridHeight);
+            return true;
+          };
+          if (drawPixelVersion(sevenImage, pixelContext) && drawPixelVersion(sevenNextImage, nextPixelContext)) {
+            displayContext.imageSmoothingEnabled = false;
+            displayContext.clearRect(0, 0, width, height);
+            displayContext.drawImage(pixelCanvas, 0, 0, width, height);
+            const nextImageOpacity = Math.max(0, Math.min(1, (sevenProgress - .42) / .16));
+            displayContext.globalAlpha = nextImageOpacity;
+            displayContext.drawImage(nextPixelCanvas, 0, 0, width, height);
+            displayContext.globalAlpha = 1;
+          }
+        };
+        const startSevenAnimation = () => {
+          if (sevenAnimating) return;
+          sevenAnimating = true;
+          window.requestAnimationFrame(animateSeven);
+        };
+        const animateSeven = (time) => {
+          const elapsed = previousFrame ? Math.min(.05, (time - previousFrame) / 1000) : 0;
+          previousFrame = time;
+          const target = sevenStep / sevenSteps;
+          sevenProgress += Math.sign(target - sevenProgress) * Math.min(Math.abs(target - sevenProgress), elapsed / .28);
+          drawSeven();
+          if (Math.abs(target - sevenProgress) > .001) window.requestAnimationFrame(animateSeven);
+          else { sevenProgress = target; drawSeven(); sevenAnimating = false; previousFrame = 0; }
+        };
+        const advanceSeven = () => {
+          sevenStep = (sevenStep + 1) % (sevenSteps + 1);
+          sevenRegion.setAttribute('aria-pressed', String(sevenStep > 0));
+          sevenRegion.setAttribute('aria-label', `이미지 변환 단계 ${sevenStep} / ${sevenSteps}`);
+          sevenRegion.setAttribute('aria-valuetext', sevenLabels[sevenStep]);
+          previousFrame = 0;
+          startSevenAnimation();
+        };
+        sevenImage.addEventListener('load', drawSeven, { once: true });
+        sevenNextImage.addEventListener('load', drawSeven, { once: true });
+        sevenRegion.addEventListener('click', advanceSeven);
+        sevenRegion.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            advanceSeven();
+          }
+        });
+        window.addEventListener('resize', drawSeven, { passive: true });
+      }
+
+      const expandedRegion = document.querySelector('.s2 .r13');
+      if (expandedRegion) {
+        const boxes = Array.from(expandedRegion.querySelectorAll('.expanded-boxes span'));
+        const expandedWord = expandedRegion.querySelector('.expanded-word:first-child');
+        const bodyWord = expandedRegion.querySelector('.expanded-word-body');
+        const measureTitle = () => {
+          if (!expandedWord || !bodyWord) return;
+          const style = getComputedStyle(expandedWord);
+          const canvas = measureTitle.canvas || (measureTitle.canvas = document.createElement('canvas'));
+          const context = canvas.getContext('2d');
+          context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+          const letterSpacing = parseFloat(style.letterSpacing) || 0;
+          const expandedWidth = context.measureText('Expanded').width + letterSpacing * 7;
+          const bodyWidth = context.measureText('Body').width + letterSpacing * 3;
+          bodyWord.style.transform = `scaleX(${expandedWidth / bodyWidth})`;
+        };
+        measureTitle();
+        window.addEventListener('resize', measureTitle, { passive: true });
+        const setExpandedDepth = (event) => {
+          const rect = expandedRegion.getBoundingClientRect();
+          const x = (event.clientX - rect.left) / rect.width;
+          const y = (event.clientY - rect.top) / rect.height;
+          const centerDistance = Math.hypot((x - .5) * 2, (y - .5) * 2);
+          const depth = Math.max(0, Math.min(1, 1 - centerDistance));
+          boxes.forEach((box, index) => {
+            const reveal = Math.max(0, Math.min(1, (depth - index * .12) * 3.5));
+            box.style.opacity = String(reveal);
+          });
+        };
+        expandedRegion.addEventListener('pointermove', setExpandedDepth, { passive: true });
+        expandedRegion.addEventListener('pointerleave', () => {
+          boxes.forEach((box) => { box.style.opacity = '0'; });
+        });
+      }
+
+      const flow11 = document.getElementById('building-flow-11');
+      const flow12 = document.getElementById('building-flow-12');
+      const makeMarqueeGroup = (phraseCount, makePhrase) => {
+        const group = document.createElement('div');
+        group.className = 'marquee-group';
+        group.setAttribute('aria-hidden', 'true');
+        for (let i = 0; i < phraseCount; i++) group.appendChild(makePhrase(i));
+        return group;
+      };
+      if (flow11) {
+        const phraseCount = 7;
+        const makeTextPhrase = () => {
+          const phrase = document.createElement('span');
+          phrase.className = 'marquee-phrase';
+          for (const character of 'Building me') {
+            const glyph = document.createElement('span');
+            glyph.className = 'marquee-glyph';
+            glyph.textContent = character;
+            phrase.appendChild(glyph);
+          }
+          return phrase;
+        };
+        flow11.append(makeMarqueeGroup(phraseCount, makeTextPhrase), makeMarqueeGroup(phraseCount, makeTextPhrase));
+        const markGlyph = (event) => {
+          const glyph = event.target.closest && event.target.closest('.marquee-glyph');
+          if (glyph && flow11.contains(glyph)) glyph.classList.add('is-blocked');
+        };
+        flow11.addEventListener('pointerover', markGlyph);
+        flow11.addEventListener('pointermove', markGlyph);
+      }
+      if (flow12) {
+        const phraseCount = 7;
+        const palette = ['#e6d61e', '#e99c7f', '#be421d', '#e17543', '#aabfad', '#4f9c56', '#722e74', '#34739d', '#fff'];
+        const imagePaths = ['12/12-1.png', '12/12-2.png', '12/12-3.png', '12/12-4.png'];
+        const meColors = Array.from({ length: phraseCount }, () => palette[Math.floor(Math.random() * palette.length)]);
+        const makeFlowPhrase = (index) => {
+          const phrase = document.createElement('span');
+          phrase.className = 'marquee-phrase';
+          phrase.append('Building ');
+          const me = document.createElement('span');
+          me.className = 'marquee-me';
+          me.dataset.meIndex = String(index);
+          me.setAttribute('role', 'button');
+          me.tabIndex = 0;
+          me.setAttribute('aria-label', 'Reveal a random image');
+          me.style.color = meColors[index];
+          me.textContent = 'me';
+          phrase.appendChild(me);
+          return phrase;
+        };
+        flow12.append(makeMarqueeGroup(phraseCount, makeFlowPhrase), makeMarqueeGroup(phraseCount, makeFlowPhrase));
+        const replaceMe = (index) => {
+          const matches = flow12.querySelectorAll(`.marquee-me[data-me-index="${index}"]`);
+          if (!matches.length) return;
+          const imagePath = imagePaths[Math.floor(Math.random() * imagePaths.length)];
+          matches.forEach((me) => {
+            const holder = document.createElement('span');
+            holder.className = 'me-replacement';
+            const image = document.createElement('img');
+            image.src = imagePath;
+            image.alt = '';
+            holder.appendChild(image);
+            me.replaceWith(holder);
+          });
+        };
+        flow12.addEventListener('click', (event) => {
+          const me = event.target.closest && event.target.closest('.marquee-me');
+          if (me && flow12.contains(me)) replaceMe(me.dataset.meIndex);
+        });
+        flow12.addEventListener('keydown', (event) => {
+          const me = event.target.closest && event.target.closest('.marquee-me');
+          if (me && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            replaceMe(me.dataset.meIndex);
+          }
+        });
+      }
+      const nineCloudCanvas = document.querySelector('.s1 .r9 .nine-two-cloud');
+      const nineCloudSource = window.TWO_MODEL_CLOUDS || {};
+      if (nineCloudCanvas && nineCloudSource['3.ply'] && nineCloudSource['beam.ply']) {
+        const nineCloudContext = nineCloudCanvas.getContext('2d');
+        let nineCloudWidth = 0, nineCloudHeight = 0, nineCloudDpr = 1;
+        let nineCloudActive = null, nineCloudLastPointer = null, nineCloudDrawPending = false;
+        const makeNineCloudModel = (name, color, glow, size, centerX) => {
+          const item = nineCloudSource[name], binary = atob(item.data), bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+          return { points: new Int16Array(bytes.buffer), count: item.count, quant: item.scale, color, glow, size, centerX, rotationX: 0, rotationY: 0 };
+        };
+        const spineCloud = makeNineCloudModel('3.ply', '#51baff', '#087dff', .98, .28);
+        const beamCloud = makeNineCloudModel('beam.ply', '#ff6b72', '#ff263c', 1.08, .72);
+        const drawNineCloud = () => {
+          if (!nineCloudWidth || !nineCloudHeight) return;
+          nineCloudContext.clearRect(0, 0, nineCloudWidth, nineCloudHeight);
+          nineCloudContext.globalCompositeOperation = 'lighter';
+          for (const model of [spineCloud, beamCloud]) {
+            const glowPath = new Path2D(), corePath = new Path2D();
+            const centerX = nineCloudWidth * model.centerX, centerY = nineCloudHeight * .5;
+            const pointScale = nineCloudHeight * .68 * model.size / 2.35;
+            const cosX = Math.cos(model.rotationX), sinX = Math.sin(model.rotationX);
+            const cosY = Math.cos(model.rotationY), sinY = Math.sin(model.rotationY);
+            for (let i = 0; i < model.count; i++) {
+              const k = i * 3;
+              const x = model.points[k] / model.quant, y = model.points[k + 1] / model.quant, z = model.points[k + 2] / model.quant;
+              const x1 = x * cosY + z * sinY, z1 = -x * sinY + z * cosY;
+              const y1 = y * cosX - z1 * sinX, z2 = y * sinX + z1 * cosX;
+              const perspective = 4.6 / (4.6 + z2);
+              const px = centerX + x1 * pointScale * perspective, py = centerY - y1 * pointScale * perspective;
+              glowPath.moveTo(px + 1.25, py); glowPath.arc(px, py, 1.25, 0, Math.PI * 2);
+              corePath.moveTo(px + .5, py); corePath.arc(px, py, .5, 0, Math.PI * 2);
+            }
+            nineCloudContext.fillStyle = model.glow;
+            nineCloudContext.globalAlpha = .36;
+            nineCloudContext.shadowColor = model.glow;
+            nineCloudContext.shadowBlur = 3.5;
+            nineCloudContext.fill(glowPath);
+            nineCloudContext.fillStyle = model.color;
+            nineCloudContext.globalAlpha = .98;
+            nineCloudContext.shadowBlur = 1;
+            nineCloudContext.fill(corePath);
+          }
+          nineCloudContext.globalAlpha = 1;
+          nineCloudContext.shadowBlur = 0;
+          nineCloudContext.globalCompositeOperation = 'source-over';
+        };
+        const scheduleNineCloudDraw = () => {
+          if (nineCloudDrawPending) return;
+          nineCloudDrawPending = true;
+          window.requestAnimationFrame(() => { nineCloudDrawPending = false; drawNineCloud(); });
+        };
+        const resizeNineCloud = () => {
+          const rect = nineCloudCanvas.getBoundingClientRect();
+          if (!rect.width || !rect.height) return;
+          nineCloudWidth = rect.width; nineCloudHeight = rect.height;
+          nineCloudDpr = Math.min(window.devicePixelRatio || 1, 2);
+          nineCloudCanvas.width = Math.round(nineCloudWidth * nineCloudDpr);
+          nineCloudCanvas.height = Math.round(nineCloudHeight * nineCloudDpr);
+          nineCloudContext.setTransform(nineCloudDpr, 0, 0, nineCloudDpr, 0, 0);
+          drawNineCloud();
+        };
+        nineCloudCanvas.addEventListener('pointerdown', (event) => {
+          const rect = nineCloudCanvas.getBoundingClientRect();
+          nineCloudActive = event.clientX < rect.left + rect.width / 2 ? spineCloud : beamCloud;
+          nineCloudLastPointer = { x: event.clientX, y: event.clientY };
+          nineCloudCanvas.setPointerCapture(event.pointerId);
+          event.preventDefault();
+        });
+        nineCloudCanvas.addEventListener('pointermove', (event) => {
+          if (!nineCloudActive || !nineCloudLastPointer) return;
+          nineCloudActive.rotationY += (event.clientX - nineCloudLastPointer.x) * .012;
+          nineCloudActive.rotationX += (event.clientY - nineCloudLastPointer.y) * .012;
+          nineCloudLastPointer = { x: event.clientX, y: event.clientY };
+          scheduleNineCloudDraw();
+        });
+        const stopNineCloudDrag = () => { nineCloudActive = null; nineCloudLastPointer = null; };
+        nineCloudCanvas.addEventListener('pointerup', stopNineCloudDrag);
+        nineCloudCanvas.addEventListener('pointercancel', stopNineCloudDrag);
+        window.addEventListener('resize', resizeNineCloud, { passive: true });
+        resizeNineCloud();
+      }
+      const three = document.querySelector('.s1 .r3');
+      const threeImages = Array.from(document.querySelectorAll('.number-three-cycle img'));
+      if (three && threeImages.length) {
+        let currentThree = 0;
+        let threeTimer;
+        const showNextThree = () => {
+          let next = Math.floor(Math.random() * (threeImages.length - 1));
+          if (next >= currentThree) next += 1;
+          threeImages[currentThree].classList.remove('is-visible');
+          currentThree = next;
+          threeImages[currentThree].classList.add('is-visible');
+        };
+        const setThreeSpeed = (delay) => {
+          window.clearInterval(threeTimer);
+          threeTimer = window.setInterval(showNextThree, delay);
+        };
+        setThreeSpeed(1000);
+        three.addEventListener('pointerenter', () => setThreeSpeed(300));
+        three.addEventListener('pointerleave', () => setThreeSpeed(1000));
+      }
+
+      const fifthRegion = document.querySelector('.s1 .r5');
+      const fifthImage = fifthRegion && fifthRegion.querySelector('.five-image');
+      // Optional user supplied track: place a music file at 5/music.mp3 to enable audio.
+      const fifthAudio = new Audio('5/music.mp3');
+      fifthAudio.loop = true;
+      let fifthOn = false;
+      const toggleFifth = async () => {
+        fifthOn = !fifthOn;
+        fifthRegion.setAttribute('aria-pressed', String(fifthOn));
+        if (fifthOn) {
+          try { await fifthAudio.play(); } catch { /* No supplied music file: visual toggle remains available. */ }
+        } else {
+          fifthAudio.pause();
+          fifthAudio.currentTime = 0;
+        }
+      };
+      if (fifthRegion && fifthImage) {
+        fifthRegion.addEventListener('click', toggleFifth);
+        fifthRegion.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleFifth(); }
+        });
+      }
+
+      const eye = document.getElementById('eye-stack');
+      const pupil = eye && eye.querySelector('.eye-pupil');
+      if (!eye || !pupil) return;
+      window.addEventListener('pointermove', (event) => {
+        const rect = eye.getBoundingClientRect();
+        const dx = Math.max(-1, Math.min(1, (event.clientX - (rect.left + rect.width / 2)) / Math.max(1, window.innerWidth / 2)));
+        const dy = Math.max(-1, Math.min(1, (event.clientY - (rect.top + rect.height / 2)) / Math.max(1, window.innerHeight / 2)));
+        pupil.style.setProperty('--pupil-x', `${-rect.width * 0.025 + dx * rect.width * 0.04}px`);
+        pupil.style.setProperty('--pupil-y', `${dy * rect.height * 0.025}px`);
+      }, { passive: true });
+    })();
+  </script>
+</body>
+
+</html>

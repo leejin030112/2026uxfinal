@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Spine and Beam | X-Ray Points</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
+    body { display: grid; place-items: center; }
+    #page {
+      position: relative;
+      width: min(100vw, 177.7778vh);
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: #000;
+    }
+    #cloud-view {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+      touch-action: none;
+      outline: none;
+    }
+    #cloud-view:active { cursor: grabbing; }
+  </style>
+</head>
+<body>
+  <main id="page" aria-label="Spine and beam point cloud composition">
+    <canvas id="cloud-view" aria-label="Drag the left or right model to rotate it"></canvas>
+  </main>
+  <script src="two-point-clouds-data.js"></script>
+  <script>
+    (() => {
+      const canvas = document.getElementById('cloud-view');
+      const ctx = canvas.getContext('2d');
+      const source = window.TWO_MODEL_CLOUDS || {};
+      let width = 0, height = 0, dpr = 1;
+      let activeModel = null, lastPointer = null, drawPending = false;
+
+      const makeModel = (name, color, glow, size, centerX) => {
+        const item = source[name];
+        const binary = atob(item.data);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return {
+          name,
+          points: new Int16Array(bytes.buffer),
+          count: item.count,
+          quant: item.scale,
+          color,
+          glow,
+          size,
+          centerX,
+          rotationX: 0,
+          rotationY: 0
+        };
+      };
+      const spine = makeModel('3.ply', '#51baff', '#087dff', .98, .28);
+      const beam = makeModel('beam.ply', '#ff6b72', '#ff263c', 1.08, .72);
+      const models = [spine, beam];
+
+      const draw = () => {
+        if (!width || !height) return;
+        ctx.clearRect(0, 0, width, height);
+        ctx.globalCompositeOperation = 'lighter';
+        for (const model of models) {
+          const glowPath = new Path2D(), corePath = new Path2D();
+          const centerX = width * model.centerX, centerY = height * .5;
+          const pointScale = height * .68 * model.size / 2.35;
+          const cosX = Math.cos(model.rotationX), sinX = Math.sin(model.rotationX);
+          const cosY = Math.cos(model.rotationY), sinY = Math.sin(model.rotationY);
+          for (let i = 0; i < model.count; i++) {
+            const k = i * 3;
+            const x = model.points[k] / model.quant;
+            const y = model.points[k + 1] / model.quant;
+            const z = model.points[k + 2] / model.quant;
+            const x1 = x * cosY + z * sinY;
+            const z1 = -x * sinY + z * cosY;
+            const y1 = y * cosX - z1 * sinX;
+            const z2 = y * sinX + z1 * cosX;
+            const p = 4.6 / (4.6 + z2);
+            const px = centerX + x1 * pointScale * p;
+            const py = centerY - y1 * pointScale * p;
+            glowPath.moveTo(px + 1.25, py);
+            glowPath.arc(px, py, 1.25, 0, Math.PI * 2);
+            corePath.moveTo(px + .5, py);
+            corePath.arc(px, py, .5, 0, Math.PI * 2);
+          }
+          ctx.fillStyle = model.glow;
+          ctx.globalAlpha = .36;
+          ctx.shadowColor = model.glow;
+          ctx.shadowBlur = 3.5;
+          ctx.fill(glowPath);
+          ctx.fillStyle = model.color;
+          ctx.globalAlpha = .98;
+          ctx.shadowBlur = 1;
+          ctx.fill(corePath);
+        }
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
+        ctx.globalCompositeOperation = 'source-over';
+      };
+      const scheduleDraw = () => {
+        if (drawPending) return;
+        drawPending = true;
+        requestAnimationFrame(() => { drawPending = false; draw(); });
+      };
+      const resize = () => {
+        const rect = canvas.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        width = rect.width; height = rect.height;
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        draw();
+      };
+      canvas.addEventListener('pointerdown', (event) => {
+        const rect = canvas.getBoundingClientRect();
+        activeModel = event.clientX < rect.left + rect.width / 2 ? spine : beam;
+        lastPointer = { x: event.clientX, y: event.clientY };
+        canvas.setPointerCapture(event.pointerId);
+        event.preventDefault();
+      });
+      canvas.addEventListener('pointermove', (event) => {
+        if (!activeModel || !lastPointer) return;
+        activeModel.rotationY += (event.clientX - lastPointer.x) * .012;
+        activeModel.rotationX += (event.clientY - lastPointer.y) * .012;
+        lastPointer = { x: event.clientX, y: event.clientY };
+        scheduleDraw();
+      });
+      const stopDrag = () => { activeModel = null; lastPointer = null; };
+      canvas.addEventListener('pointerup', stopDrag);
+      canvas.addEventListener('pointercancel', stopDrag);
+      window.addEventListener('resize', resize, { passive: true });
+      resize();
+    })();
+  </script>
+</body>
+</html>

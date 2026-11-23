@@ -1,0 +1,6 @@
+Asset: 3D face scan model and texture
+Creator: Artec Group Inc.
+Source files: face_ply/face.ply and face_ply/face.jpg
+License: Creative Commons Attribution 3.0 Unported (CC BY 3.0)
+Changes: Sampled the 150,002-vertex scan to 45,000 points and sampled the source texture into per-point colors for the interactive point-cloud view.
+Original license text: face_ply/license.txt
